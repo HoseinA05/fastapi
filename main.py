@@ -1,5 +1,15 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
+import os
+import telebot
+
+BOT_TOKEN = os.environ["BOT_TOKEN"]
+bot = telebot.TeleBot(BOT_TOKEN)
+
+@bot.message_handler(commands=["start"])
+def start(message):
+    bot.reply_to(message, "Welcome!")
+
 
 
 app = FastAPI(
@@ -8,9 +18,17 @@ app = FastAPI(
     version="1.0.0",
 )
 
-@app.post("/api/echo")
-async def foo(payload: dict):
-    return {"received_payload": payload}
+
+@app.post("/api/telegram_webhook")
+async def telegram_webhook(request: Request):
+    json_data = await request.json()
+    update = telebot.types.Update.de_json(json_data)
+    bot.process_new_updates([update])
+    return {"ok": True}
+
+@app.post("/api/test")
+async def test():
+    return {"message": "Test successful"}
 
 @app.get("/api/data")
 def get_sample_data():
