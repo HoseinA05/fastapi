@@ -8,6 +8,9 @@ app = FastAPI(
     version="1.0.0",
 )
 
+@app.post("/api/echo")
+async def foo(payload: dict):
+    return {"received_payload": payload}
 
 @app.get("/api/data")
 def get_sample_data():
@@ -73,6 +76,7 @@ def read_root():
                 align-items: center;
                 padding: 1rem 2rem;
                 gap: 2rem;
+                background-color: blue;
             }
 
             .logo {
