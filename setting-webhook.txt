@@ -1,0 +1,5 @@
+# Set the webhook
+curl -X POST "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=https://your-app.vercel.app/api/telegram_webhook"
+
+# Verify it's set
+curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
