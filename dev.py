@@ -22,6 +22,6 @@ def ensure_no_webhook():
 
 if __name__ == "__main__":
     if ensure_no_webhook():
-      bot = get_bot()
-      print("🤖 Bot is polling locally...")
-      bot.polling(non_stop=True)
+        bot = get_bot()
+        print("🤖 Bot is polling locally...")
+        bot.polling(non_stop=True)

@@ -9,15 +9,18 @@ logger = logging.getLogger(__name__)
 _connection_pool = None
 
 def get_connection_pool():
+    """Create a connection pool"""
     global _connection_pool
     if _connection_pool is None:
         try:
-            DATABASE_URL = os.environ.get("DATABASE_URL")
-            _connection_pool = psycopg2.pool.SimpleConnectionPool(
-                1,  # minimum connections
-                5,  # maximum connections
-                DATABASE_URL
-            )
+            # --- Production settings
+            # DATABASE_URL = os.environ.get("DATABASE_URL")
+            # _connection_pool = psycopg2.pool.SimpleConnectionPool(1, 5, DATABASE_URL);
+            
+            # --- Development settings
+            dev_url = "postgresql://postgres:123@localhost:5432/OLP"
+            _connection_pool = psycopg2.pool.SimpleConnectionPool(1, 5, dev_url);
+            
             logger.info("Database connection pool created")
         except Exception as e:
             logger.error(f"Failed to create connection pool: {e}")
