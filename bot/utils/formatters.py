@@ -89,7 +89,7 @@ def format_teacher_info(teacher):
     age = calculate_age(birthday)
 
     details = f"""
-  <b>👤 Student Profile</b>
+  <b>👤 Teacher Profile</b>
 
   <b>Name:</b> {name}
   <b>Username:</b> {username}

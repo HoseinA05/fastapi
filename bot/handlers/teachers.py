@@ -12,11 +12,15 @@ def register(bot):
             data = Teachers.getAllTeachers()
             if data:
 
-                markup = types.InlineKeyboardMarkup(row_width=2)
+                markup = types.InlineKeyboardMarkup(row_width=1)
                 for row in data:
                     btn = types.InlineKeyboardButton(
                         f"@{row[1]} | id#{row[0]}", callback_data=f"teacher_{row[0]}")
                     markup.add(btn)
+                # add button for creating a new teacher
+                markup.add(types.InlineKeyboardButton(
+                    "➕ Create New Teacher", callback_data="create_teacher"))
+
                 bot.send_message(
                     message.chat.id, "Here is the data:", reply_markup=markup)
             else:

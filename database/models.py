@@ -77,7 +77,7 @@ class Teachers:
 
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT id,username, name, created_at, email, phone_number, last_seen, is_verfied, birthday, about_me, job_title FROM teachers WHERE id = %s", (teacher_id))
+                "SELECT id, username, name, created_at, email, phone_number, last_seen, is_verfied, birthday, about_me, job_title FROM teachers WHERE id = %s", (teacher_id, ))
             result = cursor.fetchall()
             cursor.close()
 
@@ -85,6 +85,30 @@ class Teachers:
         except Exception as e:
             logger.error(f"Database query error in getTeacherById: {e}")
             return None
+        finally:
+            if conn:
+                connection.release_db_connection(conn)
+
+    def createTeacher(name, email, phone_number, password, username, birthday, about_me, job_title):
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return False
+
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO teachers (name, email, phone_number, hashed_password, username, birthday, about_me, job_title) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                (name, email, phone_number, password,
+                 username, birthday, about_me, job_title)
+            )
+            conn.commit()
+            cursor.close()
+
+            return True
+        except Exception as e:
+            logger.error(f"Database query error in createTeacher: {e}")
+            return False
         finally:
             if conn:
                 connection.release_db_connection(conn)
