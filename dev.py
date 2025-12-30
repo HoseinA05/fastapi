@@ -1,6 +1,6 @@
 import os
 import requests
-from bot import get_bot
+from bot.bot import get_bot
 from dotenv import load_dotenv
 
 load_dotenv()

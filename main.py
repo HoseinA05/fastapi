@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 async def telegram_webhook(request: Request):
     try:
         import telebot
-        from bot import get_bot
+        from bot.bot import get_bot
         
         bot = get_bot()
         json_data = await request.json()
