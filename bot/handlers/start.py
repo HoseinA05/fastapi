@@ -27,3 +27,15 @@ def register(bot):
     def handle_test_options(message):
         option = message.text
         bot.send_message(message.chat.id, f"You selected: {option}")
+
+
+def startMarkup():
+    markup = types.ReplyKeyboardMarkup(
+        row_width=2, one_time_keyboard=True, resize_keyboard=True)
+    btn1 = types.KeyboardButton("Show Students")
+    btn2 = types.KeyboardButton("Show Teachers")
+    btn3 = types.KeyboardButton("Show Courses")
+    btn4 = types.KeyboardButton("Show Tag")
+    btn5 = types.KeyboardButton("Show Categories")
+    markup.add(btn1, btn2, btn3, btn4, btn5)
+    return markup

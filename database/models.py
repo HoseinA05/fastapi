@@ -112,3 +112,45 @@ class Teachers:
         finally:
             if conn:
                 connection.release_db_connection(conn)
+
+    def updateTeacher(teacher_id, **fields):
+        if not fields:
+            return False  # nothing to update
+
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return False
+
+            cursor = conn.cursor()
+
+            # Build dynamic SET clause
+            columns = []
+            values = []
+
+            for key, value in fields.items():
+                columns.append(f"{key} = %s")
+                values.append(value)
+
+            values.append(teacher_id)
+
+            query = f"""
+                UPDATE teachers
+                SET {', '.join(columns)}
+                WHERE id = %s
+            """
+
+            cursor.execute(query, tuple(values))
+            conn.commit()
+            cursor.close()
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Database query error in updateTeacher: {e}")
+            return False
+
+        finally:
+            if conn:
+                connection.release_db_connection(conn)
