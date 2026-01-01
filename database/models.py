@@ -46,6 +46,94 @@ class Students:
             if conn:
                 connection.release_db_connection(conn)
 
+    def createStudent(name, email, phone_number, password, username, birthday):
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return False
+
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO students (name, email, phone_number, hashed_password, username, birthday) VALUES (%s, %s, %s, %s, %s, %s)",
+                (name, email, phone_number, password,
+                 username, birthday)
+            )
+            conn.commit()
+            cursor.close()
+
+            return True
+        except Exception as e:
+            logger.error(f"Database query error in createStudent: {e}")
+            return False
+        finally:
+            if conn:
+                connection.release_db_connection(conn)
+
+    def updateStudent(student_id, **fields):
+        if not fields:
+            return False  # nothing to update
+
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return False
+
+            cursor = conn.cursor()
+
+            # Build dynamic SET clause
+            columns = []
+            values = []
+
+            for key, value in fields.items():
+                columns.append(f"{key} = %s" if key !=
+                               'password' else "hashed_password = %s")
+                values.append(value)
+
+            values.append(student_id)
+
+            query = f"""
+                UPDATE students
+                SET {', '.join(columns)}
+                WHERE id = %s
+            """
+
+            cursor.execute(query, tuple(values))
+            conn.commit()
+            cursor.close()
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Database query error in updateStudent: {e}")
+            return False
+
+        finally:
+            if conn:
+                connection.release_db_connection(conn)
+
+    def deleteStudent(student_id):
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return False
+
+            cursor = conn.cursor()
+            cursor.execute(
+                "DELETE FROM students WHERE id = %s", (student_id,))
+            conn.commit()
+            cursor.close()
+
+            return True
+        except Exception as e:
+            logger.error(f"Database query error in deleteStudent: {e}")
+            return False
+        finally:
+            if conn:
+                connection.release_db_connection(conn)
+
 
 class Teachers:
     def getAllTeachers():
@@ -130,7 +218,8 @@ class Teachers:
             values = []
 
             for key, value in fields.items():
-                columns.append(f"{key} = %s")
+                columns.append(f"{key} = %s" if key !=
+                               'password' else "hashed_password = %s")
                 values.append(value)
 
             values.append(teacher_id)

@@ -123,20 +123,16 @@ def register(bot: TeleBot):
 
     def process_field_select(message, teacher: tuple):
         field = message.text.lower()
-        if field == 'cancel':
-            bot.send_message(message.chat.id, "Action cancelled.",
+        if field == 'cancel' or field not in EDITABLE_FIELDS:
+            msg = "Action cancelled." if field == 'cancel' else "Invalid field. Action cancelled."
+            bot.send_message(message.chat.id, msg,
                              reply_markup=startMarkup())
-            return
-
-        if field not in EDITABLE_FIELDS:
-            bot.send_message(
-                message.chat.id, "Invalid field. Action cancelled.")
             return
 
         current_value = teacher[EDITABLE_FIELDS[field]]
 
         msg = bot.send_message(
-            message.chat.id, f"Current value is: {current_value}.\n Please enter new value for {field}:", reply_markup=cancelMarkup)
+            message.chat.id, f"Current value is: {current_value if field != 'password' else '********'}.\n Please enter new value for {field}:", reply_markup=cancelMarkup)
         bot.register_next_step_handler(
             msg, process_value_edit, teacher[0], field, current_value)
 
