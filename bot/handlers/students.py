@@ -17,6 +17,11 @@ def register(bot):
                     btn = types.InlineKeyboardButton(
                         f"@{row[1]} | id#{row[0]}", callback_data=f"student_{row[0]}")
                     markup.add(btn)
+
+                # add button for creating a new student
+                markup.add(types.InlineKeyboardButton(
+                    "➕ Create New Student", callback_data="create_student"))
+
                 bot.send_message(
                     message.chat.id, "Here is the data:", reply_markup=markup)
             else:

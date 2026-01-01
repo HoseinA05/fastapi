@@ -154,3 +154,24 @@ class Teachers:
         finally:
             if conn:
                 connection.release_db_connection(conn)
+
+    def deleteTeacher(teacher_id):
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return False
+
+            cursor = conn.cursor()
+            cursor.execute(
+                "DELETE FROM teachers WHERE id = %s", (teacher_id,))
+            conn.commit()
+            cursor.close()
+
+            return True
+        except Exception as e:
+            logger.error(f"Database query error in deleteTeacher: {e}")
+            return False
+        finally:
+            if conn:
+                connection.release_db_connection(conn)

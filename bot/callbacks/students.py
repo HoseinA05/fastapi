@@ -1,6 +1,7 @@
 from telebot import types
 from database.models import Students
 from bot.utils.formatters import format_student_info
+from bot.utils.crud_helpers import create_entity_markup
 
 
 def register(bot):
@@ -11,7 +12,8 @@ def register(bot):
 
         if student:
             details = format_student_info(student)
-            markup = types.InlineKeyboardMarkup()
+            markup = create_entity_markup("student", student_id)
+
             bot.send_message(call.message.chat.id, details,
                              reply_markup=markup, parse_mode="HTML")
         else:
