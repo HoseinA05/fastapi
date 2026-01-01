@@ -1,4 +1,4 @@
-from . import start, students, teachers, courses, common
+from . import start, students, teachers, courses, tags, common
 from bot.callbacks.init import register_all_callbacks
 
 
@@ -9,6 +9,7 @@ def register_all_handlers(bot):
     students.register(bot)
     teachers.register(bot)
     courses.register(bot)
+    tags.register(bot)
     common.register(bot)  # Must be last (catch-all)
 
     # Callback handlers

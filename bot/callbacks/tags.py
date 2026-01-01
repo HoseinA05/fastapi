@@ -1,8 +1,9 @@
 from telebot import types, TeleBot
-from database.models import Students
-from bot.utils.formatters import format_student_info
-from bot.utils.crud_helpers import create_entity_markup
+from database.models import Tags
 from bot.handlers.start import startMarkup
+from bot.utils.crud_helpers import create_entity_markup
+
+# TODO: Add Option for showing courses with specific tags.
 
 
 def register(bot: TeleBot):
@@ -10,43 +11,41 @@ def register(bot: TeleBot):
     cancelMarkup.add(types.InlineKeyboardButton(
         "Cancel", callback_data="cancel"))
 
-    STUDENT_FIELDS = [
-        ('name', "the student's name"),
-        ('email', "email"),
-        ('phone_number', "phone (<Optional>)"),
-        ('password', "password"),
-        ('username', "username"),
-        ('birthday', "birthday (YY/MM/DD)"),
+    TAG_FIELDS = [
+        ('name', "the tag's name"),
+        ('slug', "The slug for tag")
     ]
     EDITABLE_FIELDS = {
-        'name': 2,
-        'email': 4,
-        'phone_number': 5,
-        'password': 3,
-        'username': 1,
-        'birthday': 8,
+        'name': 1,
+        'slug': 2
     }
 
-    # Showing details of a Student
-    @bot.callback_query_handler(func=lambda call: call.data.startswith('student_'))
-    def show_student_details(call):
-        student_id = call.data.split('_')[1]
-        student = Students.getStudentById(student_id)
+    # Showing details of a Tag
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('tag_'))
+    def show_teacher_details(call):
+        tag_id = call.data.split('_')[1]
+        tag = Tags.getTagById(tag_id)
 
-        if student:
-            details = format_student_info(student)
-            markup = create_entity_markup("student", student_id)
+        if tag:
+            details = f"""
+            <b>🔖 Tag Profile</b>
+
+            <b>Name:</b> {tag[1]}
+            <b>slug:</b> {tag[2]}
+            """
+            details.strip()
+            markup = create_entity_markup("tag", tag_id)
 
             bot.send_message(call.message.chat.id, details,
                              reply_markup=markup, parse_mode="HTML")
         else:
-            bot.send_message(call.message.chat.id, "Student not found.")
+            bot.send_message(call.message.chat.id, "Tag not found.")
 
         bot.answer_callback_query(call.id)
 
-    # Creating a Student Flow
-    @bot.callback_query_handler(func=lambda call: call.data == 'create_student')
-    def create_student(call):
+    # Creating a Tag Flow
+    @bot.callback_query_handler(func=lambda call: call.data == 'create_tag')
+    def start_tag_creation(call):
         msg = bot.send_message(call.message.chat.id,
                                "Please enter following data: (enter any key to start)",
                                reply_markup=cancelMarkup)
@@ -56,16 +55,16 @@ def register(bot: TeleBot):
     def collect_field(message, data, step):
         # Save previous field
         if step > 0:
-            field_name = STUDENT_FIELDS[step - 1][0]
+            field_name = TAG_FIELDS[step - 1][0]
             data[field_name] = message.text
 
         # Done collecting?
-        if step >= len(STUDENT_FIELDS):
+        if step >= len(TAG_FIELDS):
             show_confirmation(message, data)
             return
 
         # Ask next question
-        field_name, prompt = STUDENT_FIELDS[step]
+        field_name, prompt = TAG_FIELDS[step]
         msg = bot.send_message(message.chat.id, f"Now enter {prompt}:",
                                reply_markup=cancelMarkup)
         bot.register_next_step_handler(msg, collect_field, data, step + 1)
@@ -73,28 +72,29 @@ def register(bot: TeleBot):
     def show_confirmation(message, data):
         summary = "Is this correct? (enter any key to continue or cancel to exit)\n\n" + "\n".join(
             f"{name.replace('_', ' ').title()}: {data[name]}"
-            for name, _ in STUDENT_FIELDS
+            for name, _ in TAG_FIELDS
         )
         msg = bot.send_message(message.chat.id, summary,
                                reply_markup=cancelMarkup)
-        bot.register_next_step_handler(msg, create_student, data)
+        bot.register_next_step_handler(msg, create_tag, data)
 
-    def create_student(message, data):
-        if Students.createStudent(**data):
-            bot.send_message(message.chat.id, "✅ Student created!",
+    def create_tag(message, data):
+        if Tags.createTag(**data):
+            bot.send_message(message.chat.id, "✅ Tag created!",
                              reply_markup=startMarkup())
         else:
             bot.send_message(
-                message.chat.id, "❌ Failed to create student.", reply_markup=startMarkup())
+                message.chat.id, "❌ Failed to create tag.", reply_markup=startMarkup())
 
-    # Editing a Student Flow
-    @bot.callback_query_handler(func=lambda call: call.data.startswith('edit_student_'))
-    def start_student_editing(call):
-        student_id = call.data.split('_')[2]
-        student = Students.getStudentById(student_id)
+    # Editing a Tag Flow
 
-        if not student:
-            bot.send_message(call.message.chat.id, "Student not found.")
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('edit_tag_'))
+    def start_tag_editing(call):
+        tag_id = call.data.split('_')[2]
+        tag = Tags.getTagById(tag_id)
+
+        if not tag:
+            bot.send_message(call.message.chat.id, "Tag not found.")
             bot.answer_callback_query(call.id)
             return
 
@@ -107,10 +107,10 @@ def register(bot: TeleBot):
                                "Please enter the field you want to edit: ", reply_markup=editMarkup)
 
         bot.register_next_step_handler(
-            msg, process_field_select, student)
+            msg, process_field_select, tag)
         bot.answer_callback_query(call.id)
 
-    def process_field_select(message, student: tuple):
+    def process_field_select(message, tag: tuple):
         field = message.text.lower()
         if field == 'cancel' or field not in EDITABLE_FIELDS:
             msg = "Action cancelled." if field == 'cancel' else "Invalid field. Action cancelled."
@@ -118,14 +118,14 @@ def register(bot: TeleBot):
                              reply_markup=startMarkup())
             return
 
-        current_value = student[EDITABLE_FIELDS[field]]
+        current_value = tag[EDITABLE_FIELDS[field]]
 
         msg = bot.send_message(
-            message.chat.id, f"Current value is: {current_value if field != 'password' else '********'}.\n Please enter new value for {field}:", reply_markup=cancelMarkup)
+            message.chat.id, f"Current value is: {current_value}.\n Please enter new value for {field}:", reply_markup=cancelMarkup)
         bot.register_next_step_handler(
-            msg, process_value_edit, student[0], field, current_value)
+            msg, process_value_edit, tag[0], field, current_value)
 
-    def process_value_edit(message, student_id, field, previous_value):
+    def process_value_edit(message, tag_id, field, previous_value):
         new_value = message.text
 
         # Handle cancellation
@@ -135,22 +135,22 @@ def register(bot: TeleBot):
             bot.send_message(message.chat.id, msg, reply_markup=startMarkup())
             return
 
-        # Update student
-        if Students.updateStudent(student_id, **{field: new_value}):
+        # Update teacher
+        if Tags.updateTag(tag_id, **{field: new_value}):
             bot.send_message(
-                message.chat.id, f"✅ Student's {field} updated successfully.", reply_markup=startMarkup())
+                message.chat.id, f"✅ Tag's {field} updated successfully.", reply_markup=startMarkup())
         else:
             bot.send_message(
-                message.chat.id, f"❌ Failed to update Student's {field}.", reply_markup=startMarkup())
+                message.chat.id, f"❌ Failed to update Tag's {field}.", reply_markup=startMarkup())
 
     # Deleting a Teacher
-    @bot.callback_query_handler(func=lambda call: call.data.startswith('delete_student_'))
-    def delete_student(call):
-        student_id = call.data.split('_')[2]
-        if (Students.deleteStudent(student_id)):
-            bot.send_message(call.message.chat.id, "✅ Student deleted.",
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('delete_tag_'))
+    def delete_tag(call):
+        tag_id = call.data.split('_')[2]
+        if (Tags.deleteTag(tag_id)):
+            bot.send_message(call.message.chat.id, "✅ Tag deleted.",
                              reply_markup=startMarkup())
         else:
-            bot.send_message(call.message.chat.id, "❌ Failed to delete Student.",
+            bot.send_message(call.message.chat.id, "❌ Failed to delete Tag.",
                              reply_markup=startMarkup())
         bot.answer_callback_query(call.id)

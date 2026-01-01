@@ -84,7 +84,7 @@ def register(bot: TeleBot):
 
     def create_course(message, data):
         if Courses.createCourse(**data):
-            bot.send_message(message.chat.id, "✅ Teacher created!",
+            bot.send_message(message.chat.id, "✅ Course created!",
                              reply_markup=startMarkup())
         else:
             bot.send_message(
@@ -132,7 +132,7 @@ def register(bot: TeleBot):
         new_value = message.text
 
         # Handle cancellation
-        if new_value.lower() == 'cancel' or new_value == f"{previous_value} (current)":
+        if new_value.lower() == 'cancel' or new_value == f"{previous_value}":
             msg = "Action cancelled." if new_value.lower(
             ) == 'cancel' else f"No changes made to {field}."
             bot.send_message(message.chat.id, msg, reply_markup=startMarkup())

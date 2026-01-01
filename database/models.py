@@ -393,3 +393,132 @@ class Courses:
         finally:
             if conn:
                 connection.release_db_connection(conn)
+
+
+class Tags:
+    def getAllTags():
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return None
+
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, name, slug FROM tags")
+            result = cursor.fetchall()
+            cursor.close()
+
+            return result if result else None
+        except Exception as e:
+            logger.error(f"Database query error in getAllTags: {e}")
+            return None
+        finally:
+            if conn:
+                connection.release_db_connection(conn)
+
+    def getTagById(tag_id):
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return None
+
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT id, name, slug FROM tags WHERE id = %s", (tag_id, ))
+            result = cursor.fetchall()
+            cursor.close()
+
+            return result[0] if result else None
+        except Exception as e:
+            logger.error(f"Database query error in getTagById: {e}")
+            return None
+        finally:
+            if conn:
+                connection.release_db_connection(conn)
+
+    def createTag(name, slug):
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return False
+
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO tags (name, slug) VALUES (%s, %s)",
+                (name, slug)
+            )
+            conn.commit()
+            cursor.close()
+
+            return True
+        except Exception as e:
+            logger.error(f"Database query error in createTag: {e}")
+            return False
+        finally:
+            if conn:
+                connection.release_db_connection(conn)
+
+    def updateTag(tag_id, **fields):
+        if not fields:
+            return False  # nothing to update
+
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return False
+
+            cursor = conn.cursor()
+
+            # Build dynamic SET clause
+            columns = []
+            values = []
+
+            for key, value in fields.items():
+                columns.append(f"{key} = %s")
+                values.append(value)
+
+            values.append(tag_id)
+
+            query = f"""
+                UPDATE tags
+                SET {', '.join(columns)}
+                WHERE id = %s
+            """
+
+            cursor.execute(query, tuple(values))
+            conn.commit()
+            cursor.close()
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Database query error in updateTag: {e}")
+            return False
+
+        finally:
+            if conn:
+                connection.release_db_connection(conn)
+
+    def deleteTag(tag_id):
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return False
+
+            cursor = conn.cursor()
+            cursor.execute(
+                "DELETE FROM tags WHERE id = %s", (tag_id,))
+            conn.commit()
+            cursor.close()
+
+            return True
+        except Exception as e:
+            logger.error(f"Database query error in deleteTag: {e}")
+            return False
+        finally:
+            if conn:
+                connection.release_db_connection(conn)
