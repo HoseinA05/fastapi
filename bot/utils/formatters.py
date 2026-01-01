@@ -32,15 +32,15 @@ def calculate_age(birthday_string):
     except:
         return "N/A"
 
+
 # Student Info Formatter
-
-
 def format_student_info(student):
     """
     Format student data into a nice message
     student is a tuple: (id, username, name, created_at, email, phone_number, last_seen, is_verified, birthday)
     """
-    print(student)
+    # print(student)
+
     id, username, name, created_at, email, phone_number, last_seen, is_verfied, birthday = student
 
     verified_status = "✅ Verified" if is_verfied else "❌ Not Verified"
@@ -73,10 +73,11 @@ def format_student_info(student):
 # Teacher Info Formatter
 def format_teacher_info(teacher):
     """
-    Format student data into a nice message
-    student is a tuple: (id, username, created_at, email, phone_number, last_seen, is_verified, birthday)
+    Format teacher data into a nice message
+    teacher is a tuple: (id, username, name, created_at, email, phone_number, last_seen, is_verified, birthday, about_me, job_title)
     """
-    print(teacher)
+    # print(teacher)
+
     id, username, name, created_at, email, phone_number, last_seen, is_verfied, birthday, about_me, job_title = teacher
 
     verified_status = "✅ Verified" if is_verfied else "❌ Not Verified"
@@ -104,6 +105,39 @@ def format_teacher_info(teacher):
   <b>📅 Account Info</b>
   <b>Joined:</b> {created_date}
   <b>Last Seen:</b> {last_seen_date}
+  <b>ID:</b> <code>{id}</code>
+  """
+    return details.strip()
+
+# Course Info Formatter
+
+
+def format_course_info(course):
+    """
+    Format course data into a nice message
+    course is a tuple: (id, name, created_at, teacher_id, updated_at, description, difficulty, language)
+    """
+    # print(course)
+
+    id, name, created_at, teacher_id, updated_at, description, difficulty, language = course
+
+    # Format dates nicely
+    created_date = format_date(created_at)
+    updated_at = format_date(updated_at)
+
+    details = f"""
+  <b>📚 Course Profile</b>
+
+  <b>Name:</b> {name}
+  <b>Description:</b>
+  {description}
+
+  <b>Language:</b> {language}
+  <b>Difficulty:</b> {difficulty}
+
+  <b>📅 Course Info</b>
+  <b>Created At:</b> {created_date}
+  <b>Last Updated At:</b> {updated_at}
   <b>ID:</b> <code>{id}</code>
   """
     return details.strip()

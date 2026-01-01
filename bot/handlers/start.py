@@ -1,6 +1,8 @@
 from telebot import types
 from bot.utils.auth import is_authenticated
 
+# TODO: Add Pagincation to Showing rows of entities (To all entities)
+
 
 def register(bot):
     @bot.message_handler(commands=["start"])
@@ -15,11 +17,6 @@ def register(bot):
         markup = startMarkup()
         bot.reply_to(message, "Use buttons to fetch from database.",
                      reply_markup=markup)
-
-    @bot.message_handler(func=lambda message: message.text in ["Show Courses", "Show Tag", "Show Categories"])
-    def handle_test_options(message):
-        option = message.text
-        bot.send_message(message.chat.id, f"You selected: {option}")
 
 
 def startMarkup():

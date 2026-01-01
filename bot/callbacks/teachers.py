@@ -4,6 +4,12 @@ from bot.utils.formatters import format_teacher_info
 from bot.handlers.start import startMarkup
 from bot.utils.crud_helpers import create_entity_markup
 
+# TODO: Add Buttons for skipping Optional Fields (Add to all entities).
+# TODO: Add Option for handling all updates at once.
+# TODO: Add Authentication for sensitive actions and info.
+
+# TODO: Add Option for seeing courses taught by a teacher in Teacher Details.
+
 
 def register(bot: TeleBot):
     cancelMarkup = types.InlineKeyboardMarkup()
@@ -90,13 +96,6 @@ def register(bot: TeleBot):
         else:
             bot.send_message(
                 message.chat.id, "❌ Failed to create teacher.", reply_markup=startMarkup())
-
-    @bot.callback_query_handler(func=lambda call: call.data == 'cancel')
-    def cancel_action(call):
-        bot.clear_step_handler(call.message)
-        bot.send_message(call.message.chat.id,
-                         "Action cancelled.", reply_markup=startMarkup())
-        bot.answer_callback_query(call.id)
 
     # Editing a Teacher Flow
     @bot.callback_query_handler(func=lambda call: call.data.startswith('edit_teacher_'))

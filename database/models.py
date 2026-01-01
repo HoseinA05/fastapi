@@ -264,3 +264,132 @@ class Teachers:
         finally:
             if conn:
                 connection.release_db_connection(conn)
+
+
+class Courses:
+    def getAllCourses():
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return None
+
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, name FROM courses")
+            result = cursor.fetchall()
+            cursor.close()
+
+            return result if result else None
+        except Exception as e:
+            logger.error(f"Database query error in getAllCourses: {e}")
+            return None
+        finally:
+            if conn:
+                connection.release_db_connection(conn)
+
+    def getCourseById(course_id):
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return None
+
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT id, name, created_at, teacher_id, updated_at, description, difficulty, language FROM courses WHERE id = %s", (course_id, ))
+            result = cursor.fetchall()
+            cursor.close()
+
+            return result[0] if result else None
+        except Exception as e:
+            logger.error(f"Database query error in getCourseById: {e}")
+            return None
+        finally:
+            if conn:
+                connection.release_db_connection(conn)
+
+    def createCourse(name, teacher_id, description, language, difficulty):
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return False
+
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO courses (name, teacher_id, description, language, difficulty) VALUES (%s, %s, %s, %s, %s)",
+                (name, teacher_id, description, language, difficulty)
+            )
+            conn.commit()
+            cursor.close()
+
+            return True
+        except Exception as e:
+            logger.error(f"Database query error in createCourse: {e}")
+            return False
+        finally:
+            if conn:
+                connection.release_db_connection(conn)
+
+    def updateCourse(course_id, **fields):
+        if not fields:
+            return False  # nothing to update
+
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return False
+
+            cursor = conn.cursor()
+
+            # Build dynamic SET clause
+            columns = []
+            values = []
+
+            for key, value in fields.items():
+                columns.append(f"{key} = %s")
+                values.append(value)
+
+            values.append(course_id)
+
+            query = f"""
+                UPDATE courses
+                SET {', '.join(columns)}
+                WHERE id = %s
+            """
+
+            cursor.execute(query, tuple(values))
+            conn.commit()
+            cursor.close()
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Database query error in updateCourse: {e}")
+            return False
+
+        finally:
+            if conn:
+                connection.release_db_connection(conn)
+
+    def deleteCourse(course_id):
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return False
+
+            cursor = conn.cursor()
+            cursor.execute(
+                "DELETE FROM courses WHERE id = %s", (course_id,))
+            conn.commit()
+            cursor.close()
+
+            return True
+        except Exception as e:
+            logger.error(f"Database query error in deleteCourse: {e}")
+            return False
+        finally:
+            if conn:
+                connection.release_db_connection(conn)
