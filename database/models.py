@@ -522,3 +522,144 @@ class Tags:
         finally:
             if conn:
                 connection.release_db_connection(conn)
+
+
+class Categories:
+    def getAllCategories():
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return None
+
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT id, name, description, parent_id FROM categories")
+            result = cursor.fetchall()
+            cursor.close()
+
+            return result if result else None
+        except Exception as e:
+            logger.error(f"Database query error in getAllCategories: {e}")
+            return None
+        finally:
+            if conn:
+                connection.release_db_connection(conn)
+
+    def getCategorieById(category_id):
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return None
+
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT
+                    c1.id,
+                    c1.name,
+                    c1.description,
+                    COALESCE(c2.name, 'None') AS parent_category
+                FROM
+                    categories c1
+                LEFT JOIN categories c2 ON c2.id = c1.parent_id
+                WHERE
+                    c1.id = %s;
+            """, (category_id,))
+
+            result = cursor.fetchall()
+            cursor.close()
+
+            return result[0] if result else None
+        except Exception as e:
+            logger.error(f"Database query error in getCategoryById: {e}")
+            return None
+        finally:
+            if conn:
+                connection.release_db_connection(conn)
+
+    def createCategory(name, description, parent_id=None):
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return False
+
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO categories (name, description, parent_id) VALUES (%s, %s, %s)",
+                (name, description, parent_id)
+            )
+            conn.commit()
+            cursor.close()
+
+            return True
+        except Exception as e:
+            logger.error(f"Database query error in createCategory: {e}")
+            return False
+        finally:
+            if conn:
+                connection.release_db_connection(conn)
+
+    def updateCategory(category_id, **fields):
+        if not fields:
+            return False  # nothing to update
+
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return False
+
+            cursor = conn.cursor()
+
+            # Build dynamic SET clause
+            columns = []
+            values = []
+
+            for key, value in fields.items():
+                columns.append(f"{key} = %s")
+                values.append(value)
+
+            values.append(category_id)
+
+            query = f"""
+                UPDATE categories
+                SET {', '.join(columns)}
+                WHERE id = %s
+            """
+
+            cursor.execute(query, tuple(values))
+            conn.commit()
+            cursor.close()
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Database query error in updateCategory: {e}")
+            return False
+
+        finally:
+            if conn:
+                connection.release_db_connection(conn)
+
+    def deleteCategory(category_id):
+        conn = None
+        try:
+            conn = connection.get_db_connection()
+            if not conn:
+                return False
+
+            cursor = conn.cursor()
+            cursor.execute(
+                "DELETE FROM categories WHERE id = %s", (category_id,))
+            conn.commit()
+            cursor.close()
+
+            return True
+        except Exception as e:
+            logger.error(f"Database query error in deleteCategory: {e}")
+            return False
+        finally:
+            if conn:
+                connection.release_db_connection(conn)
