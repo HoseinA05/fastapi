@@ -1,6 +1,9 @@
 import logging
 import database.connection as connection
 
+import hashlib
+from datetime import datetime, timedelta
+
 logger = logging.getLogger(__name__)
 
 
@@ -53,6 +56,119 @@ class BaseRepository:
         finally:
             if conn:
                 connection.release_db_connection(conn)
+
+
+class Admins(BaseRepository):
+
+    SESSION_TIMEOUT_HOURS = 1
+
+    @staticmethod
+    def hash_password(password: str) -> str:
+        """Hash password using SHA256"""
+        return hashlib.sha256(password.encode()).hexdigest()
+
+    @staticmethod
+    def login(username: str, password: str, telegram_id: int) -> bool:
+        """
+        Verify credentials and create a session.
+        Returns True if login successful, False otherwise.
+        """
+
+        def query(cursor):
+            password_hash = Admins.hash_password(password)
+            cursor.execute(
+                "SELECT id FROM admins WHERE username = %s AND password_hash = %s AND telegram_id = %s",
+                (username, password_hash, telegram_id)
+            )
+            result = cursor.fetchone()
+            return result is not None
+
+        result = Admins._execute_query(query, "login")
+
+        if result:
+            # Create session by updating last_login and session_expires_at
+            def mutation(cursor, conn):
+                expires_at = datetime.now() + timedelta(hours=Admins.SESSION_TIMEOUT_HOURS)
+                cursor.execute(
+                    """UPDATE admins 
+                    SET last_login = CURRENT_TIMESTAMP, 
+                        session_expires_at = %s 
+                    WHERE telegram_id = %s""",
+                    (expires_at, telegram_id)
+                )
+
+            return Admins._execute_mutation(mutation, "login")
+
+        return False
+
+    @staticmethod
+    def is_authenticated(telegram_id: int) -> bool:
+        """Check if user has a valid active session"""
+        def query(cursor):
+            cursor.execute(
+                "SELECT session_expires_at FROM admins WHERE telegram_id = %s",
+                (telegram_id,)
+            )
+            result = cursor.fetchone()
+
+            if not result or result[0] is None:
+                return False
+
+            # Check if session has expired
+            expires_at = result[0]
+
+            if isinstance(expires_at, str):
+                expires_at = datetime.fromisoformat(expires_at)
+
+            return datetime.now() < expires_at
+
+        result = Admins._execute_query(query, "is_authenticated")
+        return result if result is not None else False
+
+    @staticmethod
+    def logout(telegram_id: int) -> bool:
+        """Logout admin by clearing session"""
+        def mutation(cursor, conn):
+            cursor.execute(
+                "UPDATE admins SET session_expires_at = NULL WHERE telegram_id = %s",
+                (telegram_id,)
+            )
+
+        return Admins._execute_mutation(mutation, "logout")
+
+    @staticmethod
+    def get_session_info(telegram_id: int) -> dict:
+        """Get session info for the admin"""
+        def query(cursor):
+            cursor.execute(
+                "SELECT username, last_login, session_expires_at FROM admins WHERE telegram_id = %s",
+                (telegram_id,)
+            )
+            result = cursor.fetchone()
+            return result
+
+        result = Admins._execute_query(query, "get_session_info")
+        if not result:
+            return None
+
+        session_info = {
+            'username': result[0],
+            'last_login': result[1],
+            'expires_at': result[2],
+            'is_active': False
+        }
+
+        if result[2]:
+            expires_at = result[2]
+
+            if isinstance(expires_at, str):
+                expires_at = datetime.fromisoformat(expires_at)
+
+            session_info['is_active'] = datetime.now() < expires_at
+            session_info['time_remaining'] = str(
+                expires_at - datetime.now()).split('.')[0]
+
+        return session_info
 
 
 class Students(BaseRepository):

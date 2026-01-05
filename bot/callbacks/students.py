@@ -1,5 +1,5 @@
 from telebot import types, TeleBot
-from database.models import Students
+from database.models import Students, Admins
 from bot.utils.formatters import format_student_info
 from bot.utils.crud_helpers import create_entity_markup
 from bot.handlers.start import startMarkup
@@ -30,12 +30,17 @@ def register(bot: TeleBot):
     # Showing details of a Student
     @bot.callback_query_handler(func=lambda call: call.data.startswith('student_'))
     def show_student_details(call):
+        if not Admins.is_authenticated(call.from_user.id):
+            bot.answer_callback_query(call.id, "⛔ Unauthorized access!")
+            bot.send_message(call.message.chat.id, "Please /login first.")
+            return
+
         student_id = call.data.split('_')[1]
         student = Students.getStudentById(student_id)
 
         if student:
             details = format_student_info(student)
-            markup = create_entity_markup("student", student_id)
+            markup = create_entity_markup("student", student_id, True)
 
             bot.send_message(call.message.chat.id, details,
                              reply_markup=markup, parse_mode="HTML")
@@ -47,6 +52,11 @@ def register(bot: TeleBot):
     # Creating a Student Flow
     @bot.callback_query_handler(func=lambda call: call.data == 'create_student')
     def create_student(call):
+        if not Admins.is_authenticated(call.from_user.id):
+            bot.answer_callback_query(call.id, "⛔ Unauthorized access!")
+            bot.send_message(call.message.chat.id, "Please /login first.")
+            return
+
         msg = bot.send_message(call.message.chat.id,
                                "Please enter following data: (enter any key to start)",
                                reply_markup=cancelMarkup)
@@ -90,6 +100,11 @@ def register(bot: TeleBot):
     # Editing a Student Flow
     @bot.callback_query_handler(func=lambda call: call.data.startswith('edit_student_'))
     def start_student_editing(call):
+        if not Admins.is_authenticated(call.from_user.id):
+            bot.answer_callback_query(call.id, "⛔ Unauthorized access!")
+            bot.send_message(call.message.chat.id, "Please /login first.")
+            return
+
         student_id = call.data.split('_')[2]
         student = Students.getStudentById(student_id)
 
@@ -146,6 +161,11 @@ def register(bot: TeleBot):
     # Deleting a Teacher
     @bot.callback_query_handler(func=lambda call: call.data.startswith('delete_student_'))
     def delete_student(call):
+        if not Admins.is_authenticated(call.from_user.id):
+            bot.answer_callback_query(call.id, "⛔ Unauthorized access!")
+            bot.send_message(call.message.chat.id, "Please /login first.")
+            return
+
         student_id = call.data.split('_')[2]
         if (Students.deleteStudent(student_id)):
             bot.send_message(call.message.chat.id, "✅ Student deleted.",

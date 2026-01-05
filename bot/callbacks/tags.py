@@ -1,5 +1,5 @@
 from telebot import types, TeleBot
-from database.models import Tags
+from database.models import Tags, Admins
 from bot.handlers.start import startMarkup
 from bot.utils.crud_helpers import create_entity_markup
 
@@ -34,7 +34,7 @@ def register(bot: TeleBot):
             <b>slug:</b> {tag[2]}
             """
             details.strip()
-            markup = create_entity_markup("tag", tag_id)
+            markup = create_entity_markup("tag", tag_id, True)
 
             bot.send_message(call.message.chat.id, details,
                              reply_markup=markup, parse_mode="HTML")
@@ -87,9 +87,13 @@ def register(bot: TeleBot):
                 message.chat.id, "❌ Failed to create tag.", reply_markup=startMarkup())
 
     # Editing a Tag Flow
-
     @bot.callback_query_handler(func=lambda call: call.data.startswith('edit_tag_'))
     def start_tag_editing(call):
+        if not Admins.is_authenticated(call.from_user.id):
+            bot.answer_callback_query(call.id, "⛔ Unauthorized access!")
+            bot.send_message(call.message.chat.id, "Please /login first.")
+            return
+
         tag_id = call.data.split('_')[2]
         tag = Tags.getTagById(tag_id)
 
@@ -146,6 +150,11 @@ def register(bot: TeleBot):
     # Deleting a Tag
     @bot.callback_query_handler(func=lambda call: call.data.startswith('delete_tag_'))
     def delete_tag(call):
+        if not Admins.is_authenticated(call.from_user.id):
+            bot.answer_callback_query(call.id, "⛔ Unauthorized access!")
+            bot.send_message(call.message.chat.id, "Please /login first.")
+            return
+
         tag_id = call.data.split('_')[2]
         if (Tags.deleteTag(tag_id)):
             bot.send_message(call.message.chat.id, "✅ Tag deleted.",

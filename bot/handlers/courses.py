@@ -24,7 +24,10 @@ def register(bot):
                 bot.send_message(
                     message.chat.id, "Here is the data:", reply_markup=markup)
             else:
-                bot.reply_to(message, "No data found.")
+                markup = types.InlineKeyboardMarkup(row_width=1)
+                markup.add(types.InlineKeyboardButton(
+                    "➕ Create New Course", callback_data="create_course"))
+                bot.reply_to(message, "No data found.", reply_markup=markup)
         except Exception as e:
             logger.error(f"Error in (Show Courses) handler: {e}")
             bot.reply_to(message, "Sorry, an error occurred.")

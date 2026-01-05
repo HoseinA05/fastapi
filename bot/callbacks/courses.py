@@ -1,5 +1,5 @@
 from telebot import TeleBot, types
-from database.models import Courses
+from database.models import Courses, Admins
 from bot.utils.crud_helpers import create_entity_markup
 from bot.utils.formatters import format_course_info
 from bot.handlers.start import startMarkup
@@ -38,7 +38,7 @@ def register(bot: TeleBot):
             return
 
         details = format_course_info(course)
-        markup = create_entity_markup("course", course_id)
+        markup = create_entity_markup("course", course_id, True)
         markup.add(types.InlineKeyboardButton(
             f"👨‍🏫 Teacher's Info", callback_data=f"teacher_{course[3]}"))
 
@@ -93,6 +93,11 @@ def register(bot: TeleBot):
     # Editing a Course Flow
     @bot.callback_query_handler(func=lambda call: call.data.startswith('edit_course_'))
     def start_course_editing(call):
+        if not Admins.is_authenticated(call.from_user.id):
+            bot.answer_callback_query(call.id, "⛔ Unauthorized access!")
+            bot.send_message(call.message.chat.id, "Please /login first.")
+            return
+
         course_id = call.data.split('_')[2]
         course = Courses.getCourseById(course_id)
 
@@ -149,6 +154,11 @@ def register(bot: TeleBot):
     # Deleting a Teacher
     @bot.callback_query_handler(func=lambda call: call.data.startswith('delete_course_'))
     def delete_course(call):
+        if not Admins.is_authenticated(call.from_user.id):
+            bot.answer_callback_query(call.id, "⛔ Unauthorized access!")
+            bot.send_message(call.message.chat.id, "Please /login first.")
+            return
+
         course_id = call.data.split('_')[2]
         if (Courses.deleteCourse(course_id)):
             bot.send_message(call.message.chat.id, "✅ Course deleted.",

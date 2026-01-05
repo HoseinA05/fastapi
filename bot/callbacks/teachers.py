@@ -1,12 +1,11 @@
 from telebot import types, TeleBot
-from database.models import Teachers
+from database.models import Teachers, Admins
 from bot.utils.formatters import format_teacher_info
 from bot.handlers.start import startMarkup
 from bot.utils.crud_helpers import create_entity_markup
 
 # TODO: Add Buttons for skipping Optional Fields (Add to all entities).
-# TODO: Add Option for handling all updates at once.
-# TODO: Add Authentication for sensitive actions and info.
+# TODO: Add Option for handling all updates at once.\
 
 # TODO: Add Option for seeing courses taught by a teacher in Teacher Details.
 
@@ -45,7 +44,7 @@ def register(bot: TeleBot):
 
         if teacher:
             details = format_teacher_info(teacher)
-            markup = create_entity_markup("teacher", teacher_id)
+            markup = create_entity_markup("teacher", teacher_id, True)
 
             bot.send_message(call.message.chat.id, details,
                              reply_markup=markup, parse_mode="HTML")
@@ -57,6 +56,11 @@ def register(bot: TeleBot):
     # Creating a Teacher Flow
     @bot.callback_query_handler(func=lambda call: call.data == 'create_teacher')
     def start_teacher_creation(call):
+        if not Admins.is_authenticated(call.from_user.id):
+            bot.answer_callback_query(call.id, "⛔ Unauthorized access!")
+            bot.send_message(call.message.chat.id, "Please /login first.")
+            return
+
         msg = bot.send_message(call.message.chat.id,
                                "Please enter following data: (enter any key to start)",
                                reply_markup=cancelMarkup)
@@ -100,6 +104,11 @@ def register(bot: TeleBot):
     # Editing a Teacher Flow
     @bot.callback_query_handler(func=lambda call: call.data.startswith('edit_teacher_'))
     def start_teacher_editing(call):
+        if not Admins.is_authenticated(call.from_user.id):
+            bot.answer_callback_query(call.id, "⛔ Unauthorized access!")
+            bot.send_message(call.message.chat.id, "Please /login first.")
+            return
+
         teacher_id = call.data.split('_')[2]
         teacher = Teachers.getTeacherById(teacher_id)
 
@@ -156,6 +165,11 @@ def register(bot: TeleBot):
     # Deleting a Teacher
     @bot.callback_query_handler(func=lambda call: call.data.startswith('delete_teacher_'))
     def delete_teacher(call):
+        if not Admins.is_authenticated(call.from_user.id):
+            bot.answer_callback_query(call.id, "⛔ Unauthorized access!")
+            bot.send_message(call.message.chat.id, "Please /login first.")
+            return
+
         teacher_id = call.data.split('_')[2]
         if (Teachers.deleteTeacher(teacher_id)):
             bot.send_message(call.message.chat.id, "✅ Teacher deleted.",

@@ -19,12 +19,15 @@ def register(bot):
                     markup.add(btn)
                 # add button for creating a new teacher
                 markup.add(types.InlineKeyboardButton(
-                    "➕ Create New Teacher", callback_data="create_teacher"))
+                    "➕ Create New Teacher 🔒", callback_data="create_teacher"))
 
                 bot.send_message(
                     message.chat.id, "Here is the data:", reply_markup=markup)
             else:
-                bot.reply_to(message, "No data found.")
+                markup = types.InlineKeyboardMarkup(row_width=1)
+                markup.add(types.InlineKeyboardButton(
+                    "➕ Create New Teacher 🔒", callback_data="create_teacher"))
+                bot.reply_to(message, "No data found.", reply_markup=markup)
         except Exception as e:
             logger.error(f"Error in get_teachers handler: {e}")
             bot.reply_to(message, "Sorry, an error occurred.")

@@ -25,11 +25,11 @@ def register(bot: TeleBot):
                 bot.send_message(
                     message.chat.id, "Here is the data:", reply_markup=markup)
             else:
-                markup = types.InlineKeyboardMarkup(row_width=2)
+                markup = types.InlineKeyboardMarkup(row_width=1)
                 markup.add(types.InlineKeyboardButton(
                     "➕ Create New Tag", callback_data="create_tag"))
 
-                bot.reply_to(message, "No data found.", markup=markup)
+                bot.reply_to(message, "No data found.", reply_markup=markup)
         except Exception as e:
             logger.error(f"Error in 'Show Tags' handler: {e}")
             bot.reply_to(message, "Sorry, an error occurred.")

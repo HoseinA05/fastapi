@@ -1,5 +1,5 @@
 from telebot import types, TeleBot
-from database.models import Categories
+from database.models import Categories, Admins
 from bot.handlers.start import startMarkup
 from bot.utils.crud_helpers import create_entity_markup
 
@@ -38,7 +38,7 @@ def register(bot: TeleBot):
             <b>Description:</b> \n{category[2]}
             """
             details.strip()
-            markup = create_entity_markup("category", category_id)
+            markup = create_entity_markup("category", category_id, True)
 
             bot.send_message(call.message.chat.id, details,
                              reply_markup=markup, parse_mode="HTML")
@@ -91,9 +91,13 @@ def register(bot: TeleBot):
                 message.chat.id, "❌ Failed to create category.", reply_markup=startMarkup())
 
     # Editing a Category Flow
-
     @bot.callback_query_handler(func=lambda call: call.data.startswith('edit_category_'))
     def start_category_editing(call):
+        if not Admins.is_authenticated(call.from_user.id):
+            bot.answer_callback_query(call.id, "⛔ Unauthorized access!")
+            bot.send_message(call.message.chat.id, "Please /login first.")
+            return
+
         category_id = call.data.split('_')[2]
         category = Categories.getCategorieById(category_id)
 
@@ -150,6 +154,11 @@ def register(bot: TeleBot):
     # Deleting a Category
     @bot.callback_query_handler(func=lambda call: call.data.startswith('delete_category_'))
     def delete_category(call):
+        if not Admins.is_authenticated(call.from_user.id):
+            bot.answer_callback_query(call.id, "⛔ Unauthorized access!")
+            bot.send_message(call.message.chat.id, "Please /login first.")
+            return
+
         category_id = call.data.split('_')[2]
         if (Categories.deleteCategory(category_id)):
             bot.send_message(call.message.chat.id, "✅ Category deleted.",

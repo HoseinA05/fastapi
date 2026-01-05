@@ -1,5 +1,4 @@
 from telebot import types
-from bot.utils.auth import is_authenticated
 
 # TODO: Add Pagincation to Showing rows of entities (To all entities)
 
@@ -7,16 +6,17 @@ from bot.utils.auth import is_authenticated
 def register(bot):
     @bot.message_handler(commands=["start"])
     def start_handler(message):
-        if is_authenticated(message.from_user.id):
-            bot.send_message(
-                message.chat.id, "authorized user! Welcome.")
-        else:
-            bot.send_message(
-                message.chat.id, "Welcome! Use buttons to fetch from database.")
+        startMessage(bot, message=message)
 
-        markup = startMarkup()
-        bot.reply_to(message, "Use buttons to fetch from database.",
-                     reply_markup=markup)
+
+def startMessage(bot, message):
+    # if is_authenticated(message.from_user.id):
+    #     bot.send_message(
+    #         message.chat.id, "authorized user! Welcome.")
+
+    markup = startMarkup()
+    bot.reply_to(message, "Use buttons to fetch from database.",
+                 reply_markup=markup)
 
 
 def startMarkup():
