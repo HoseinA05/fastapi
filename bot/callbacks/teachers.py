@@ -41,7 +41,7 @@ def register(bot: TeleBot):
     @bot.callback_query_handler(func=lambda call: call.data.startswith('teacher_'))
     def show_teacher_details(call):
         teacher_id = call.data.split('_')[1]
-        teacher = Teachers.getTeachertById(teacher_id)
+        teacher = Teachers.getTeacherById(teacher_id)
 
         if teacher:
             details = format_teacher_info(teacher)
@@ -101,7 +101,7 @@ def register(bot: TeleBot):
     @bot.callback_query_handler(func=lambda call: call.data.startswith('edit_teacher_'))
     def start_teacher_editing(call):
         teacher_id = call.data.split('_')[2]
-        teacher = Teachers.getTeachertById(teacher_id)
+        teacher = Teachers.getTeacherById(teacher_id)
 
         if not teacher:
             bot.send_message(call.message.chat.id, "Teacher not found.")

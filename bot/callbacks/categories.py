@@ -3,7 +3,8 @@ from database.models import Categories
 from bot.handlers.start import startMarkup
 from bot.utils.crud_helpers import create_entity_markup
 
-# TODO: Add Option for showing courses with specific tags.
+# TODO: Add Option for showing parent categories when creating a new category.
+# TODO: Show Some of the courses of a Category.
 
 
 def register(bot: TeleBot):

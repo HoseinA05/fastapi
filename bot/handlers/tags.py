@@ -1,11 +1,11 @@
 import logging
-from telebot import types
+from telebot import types, TeleBot
 from database.models import Tags
 
 logger = logging.getLogger(__name__)
 
 
-def register(bot):
+def register(bot: TeleBot):
     @bot.message_handler(func=lambda message: message.text == "Show Tags")
     def get_tags(message):
         try:
@@ -25,7 +25,11 @@ def register(bot):
                 bot.send_message(
                     message.chat.id, "Here is the data:", reply_markup=markup)
             else:
-                bot.reply_to(message, "No data found.")
+                markup = types.InlineKeyboardMarkup(row_width=2)
+                markup.add(types.InlineKeyboardButton(
+                    "➕ Create New Tag", callback_data="create_tag"))
+
+                bot.reply_to(message, "No data found.", markup=markup)
         except Exception as e:
             logger.error(f"Error in 'Show Tags' handler: {e}")
             bot.reply_to(message, "Sorry, an error occurred.")
