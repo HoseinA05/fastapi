@@ -1,7 +1,7 @@
 from telebot import TeleBot, types
 from database.models import Courses, Admins
 from bot.utils.crud_helpers import create_entity_markup
-from bot.utils.formatters import format_course_info
+from bot.utils.formatters import format_course_info, format_course_review
 from bot.handlers.start import startMarkup
 
 # TODO: Add Option for selecting Teacher in a more user-friendly way (name instead of ID) + pagination for it.
@@ -16,9 +16,9 @@ def register(bot: TeleBot):
     COURSE_FIELDS = [
         ('name', "the course's name"),
         ('teacher_id', "The course's Teacher ID"),
-        ('description', "description (<Optional>)"),
+        ('description', "description (<Optional>) ('s' to skip)"),
         ('language', "language ('english', 'spanish', 'german', 'french', 'persian')"),
-        ('difficulty', "difficulty (<Optional>) ('beginner', 'intermediate', 'expert')"),
+        ('difficulty', "difficulty (<Optional>) ('s' to skip) ('beginner', 'intermediate', 'expert')"),
     ]
     EDITABLE_FIELDS = {
         'name': 1,
@@ -35,12 +35,15 @@ def register(bot: TeleBot):
 
         if not course:
             bot.send_message(call.message.chat.id, "Course not found.")
+            bot.answer_callback_query(call.id)
             return
 
         details = format_course_info(course)
         markup = create_entity_markup("course", course_id, True)
         markup.add(types.InlineKeyboardButton(
             f"👨‍🏫 Teacher's Info", callback_data=f"teacher_{course[3]}"))
+        markup.add(types.InlineKeyboardButton(
+            f" 📰 Course Reviews", callback_data=f"courseReviews_{course_id}"))
 
         bot.send_message(call.message.chat.id, details,
                          reply_markup=markup, parse_mode="HTML")
@@ -60,7 +63,8 @@ def register(bot: TeleBot):
         # Save previous field
         if step > 0:
             field_name = COURSE_FIELDS[step - 1][0]
-            data[field_name] = message.text
+            data[field_name] = None if (
+                (field_name in ['description', 'difficulty']) and message.text == 's') else message.text
 
         # Done collecting?
         if step >= len(COURSE_FIELDS):
@@ -166,4 +170,20 @@ def register(bot: TeleBot):
         else:
             bot.send_message(call.message.chat.id, "❌ Failed to delete Course.",
                              reply_markup=startMarkup())
+        bot.answer_callback_query(call.id)
+
+    # Show Some of the course reviews
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('courseReviews_'))
+    def show_course_reviews(call):
+        course_id = call.data.split('_')[1]
+        reviews = Courses.getCourseReviews(course_id)
+
+        if reviews:
+            for rev in reviews:
+                details = format_course_review(rev)
+                bot.send_message(call.message.chat.id,
+                                 details, parse_mode="HTML")
+        else:
+            bot.send_message(call.message.chat.id, "No reviews yet")
+
         bot.answer_callback_query(call.id)

@@ -4,11 +4,6 @@ from bot.utils.formatters import format_teacher_info
 from bot.handlers.start import startMarkup
 from bot.utils.crud_helpers import create_entity_markup
 
-# TODO: Add Buttons for skipping Optional Fields (Add to all entities).
-# TODO: Add Option for handling all updates at once.\
-
-# TODO: Add Option for seeing courses taught by a teacher in Teacher Details.
-
 
 def register(bot: TeleBot):
     cancelMarkup = types.InlineKeyboardMarkup()
@@ -18,7 +13,7 @@ def register(bot: TeleBot):
     TEACHER_FIELDS = [
         ('name', "the teacher's name"),
         ('email', "email"),
-        ('phone_number', "phone (<Optional>)"),
+        ('phone_number', "phone (<Optional>) ('s' to skip)"),
         ('password', "password"),
         ('username', "username"),
         ('birthday', "birthday (YY/MM/DD)"),
@@ -71,7 +66,8 @@ def register(bot: TeleBot):
         # Save previous field
         if step > 0:
             field_name = TEACHER_FIELDS[step - 1][0]
-            data[field_name] = message.text
+            data[field_name] = None if (
+                (field_name == 'phone_number') and message.text == 's') else message.text
 
         # Done collecting?
         if step >= len(TEACHER_FIELDS):

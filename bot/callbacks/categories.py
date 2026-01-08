@@ -4,7 +4,6 @@ from bot.handlers.start import startMarkup
 from bot.utils.crud_helpers import create_entity_markup
 
 # TODO: Add Option for showing parent categories when creating a new category.
-# TODO: Show Some of the courses of a Category.
 
 
 def register(bot: TeleBot):
@@ -14,8 +13,8 @@ def register(bot: TeleBot):
 
     CATEGORY_FIELDS = [
         ('name', "the category's name"),
-        ('description', "The description for category"),
-        ('parent_id', "The parent category id")
+        ('description', "The description for category (<Optional>) ('s' to skip)"),
+        ('parent_id', "The parent category id (<Optional>) ('s' to skip))")
     ]
     EDITABLE_FIELDS = {
         'name': 1,
@@ -27,7 +26,7 @@ def register(bot: TeleBot):
     @bot.callback_query_handler(func=lambda call: call.data.startswith('category_'))
     def show_category_details(call):
         category_id = call.data.split('_')[1]
-        category = Categories.getCategorieById(category_id)
+        category = Categories.getCategoryById(category_id)
 
         if category:
             details = f"""
@@ -39,6 +38,8 @@ def register(bot: TeleBot):
             """
             details.strip()
             markup = create_entity_markup("category", category_id, True)
+            markup.add(types.InlineKeyboardButton("📁 Show Top Courses",
+                       callback_data=f"categoryCourses_{category_id}"))
 
             bot.send_message(call.message.chat.id, details,
                              reply_markup=markup, parse_mode="HTML")
@@ -60,7 +61,8 @@ def register(bot: TeleBot):
         # Save previous field
         if step > 0:
             field_name = CATEGORY_FIELDS[step - 1][0]
-            data[field_name] = message.text
+            data[field_name] = None if (
+                (field_name in ['description', 'parent_id']) and message.text == 's') else message.text
 
         # Done collecting?
         if step >= len(CATEGORY_FIELDS):
@@ -99,7 +101,7 @@ def register(bot: TeleBot):
             return
 
         category_id = call.data.split('_')[2]
-        category = Categories.getCategorieById(category_id)
+        category = Categories.getCategoryById(category_id)
 
         if not category:
             bot.send_message(call.message.chat.id, "Category not found.")
@@ -166,4 +168,23 @@ def register(bot: TeleBot):
         else:
             bot.send_message(call.message.chat.id, "❌ Failed to delete Category.",
                              reply_markup=startMarkup())
+        bot.answer_callback_query(call.id)
+
+    # Show Top Courses in a Category
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('categoryCourses_'))
+    def category_courses(call):
+        category_id = call.data.split('_')[1]
+        courses = Categories.getTopCoursesByCategory(category_id)
+
+        markup = types.InlineKeyboardMarkup()
+        if courses:
+            for course in courses:
+                markup.add(types.InlineKeyboardButton(
+                    course[1], callback_data=f"course_{course[0]}"))
+            bot.send_message(
+                call.message.chat.id, "📚 Top Courses in this Category:", reply_markup=markup)
+        else:
+            bot.send_message(
+                call.message.chat.id, "There are no courses in this category.", reply_markup=markup)
+
         bot.answer_callback_query(call.id)

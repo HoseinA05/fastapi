@@ -1,6 +1,6 @@
 from telebot import types, TeleBot
 from database.models import Students, Admins
-from bot.utils.formatters import format_student_info
+from bot.utils.formatters import format_course_review, format_student_info
 from bot.utils.crud_helpers import create_entity_markup
 from bot.handlers.start import startMarkup
 
@@ -13,7 +13,7 @@ def register(bot: TeleBot):
     STUDENT_FIELDS = [
         ('name', "the student's name"),
         ('email', "email"),
-        ('phone_number', "phone (<Optional>)"),
+        ('phone_number', "phone (<Optional>) ('s' to skip)"),
         ('password', "password"),
         ('username', "username"),
         ('birthday', "birthday (YY/MM/DD)"),
@@ -41,6 +41,10 @@ def register(bot: TeleBot):
         if student:
             details = format_student_info(student)
             markup = create_entity_markup("student", student_id, True)
+            markup.add(types.InlineKeyboardButton("📚 Show Courses 🔒",
+                       callback_data=f"studentCourses_{student_id}"))
+            markup.add(types.InlineKeyboardButton("📰 Reviews By Student 🔒",
+                       callback_data=f"studentReviews_{student_id}"))
 
             bot.send_message(call.message.chat.id, details,
                              reply_markup=markup, parse_mode="HTML")
@@ -67,7 +71,8 @@ def register(bot: TeleBot):
         # Save previous field
         if step > 0:
             field_name = STUDENT_FIELDS[step - 1][0]
-            data[field_name] = message.text
+            data[field_name] = None if (
+                (field_name == 'phone_number') and message.text == 's') else message.text
 
         # Done collecting?
         if step >= len(STUDENT_FIELDS):
@@ -173,4 +178,51 @@ def register(bot: TeleBot):
         else:
             bot.send_message(call.message.chat.id, "❌ Failed to delete Student.",
                              reply_markup=startMarkup())
+        bot.answer_callback_query(call.id)
+
+    # Showing Courses a Students has enrolled in
+    @bot.callback_query_handler(func=lambda call: call.data.startswith("studentCourses_"))
+    def show_student_course(call):
+        if not Admins.is_authenticated(call.from_user.id):
+            bot.answer_callback_query(call.id, "⛔ Unauthorized access!")
+            bot.send_message(call.message.chat.id, "Please /login first.")
+            return
+
+        student_id = call.data.split('_')[1]
+        courses = Students.getStudentCourses(student_id)
+
+        if courses:
+            markup = types.InlineKeyboardMarkup(row_width=1)
+            for c in courses:
+                markup.add(types.InlineKeyboardButton(
+                    f"{c[1][:26] + "..."} | id#{c[0]}", callback_data=f"course_{c[0]}")
+                )
+
+            bot.send_message(call.message.chat.id,
+                             "Courses: ", reply_markup=markup)
+        else:
+            bot.send_message(call.message.chat.id, "No courses.")
+
+        bot.answer_callback_query(call.id)
+
+    # Showing Reviews a Students has written
+    @bot.callback_query_handler(func=lambda call: call.data.startswith("studentReviews_"))
+    def show_student_reviews(call):
+        if not Admins.is_authenticated(call.from_user.id):
+            bot.answer_callback_query(call.id, "⛔ Unauthorized access!")
+            bot.send_message(call.message.chat.id, "Please /login first.")
+            return
+
+        student_id = call.data.split('_')[1]
+        reviews = Students.getStudentReviews(student_id)
+
+        if reviews:
+            for rev in reviews:
+                details = format_course_review(rev)
+                bot.send_message(call.message.chat.id,
+                                 details, parse_mode="HTML")
+
+        else:
+            bot.send_message(call.message.chat.id, "No reviews.")
+
         bot.answer_callback_query(call.id)

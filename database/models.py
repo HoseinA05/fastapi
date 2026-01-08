@@ -227,6 +227,44 @@ class Students(BaseRepository):
 
         return cls._execute_mutation(mutation, "deleteStudent")
 
+    @classmethod
+    def getStudentCourses(cls, student_id):
+        def query(cursor):
+            cursor.execute(
+                f"""
+                SELECT
+                    c.id,
+                    c.name
+                FROM courses c
+                JOIN course_enrolments ce ON ce.course_id = c.id
+                JOIN students s ON s.id = ce.student_id
+                WHERE s.id = %s
+                """, (student_id,)
+            )
+            result = cursor.fetchall()
+            return result if result else None
+
+        return cls._execute_query(query, 'getStudentCourses')
+
+    @classmethod
+    def getStudentReviews(cls, student_id):
+        def query(cursor):
+            cursor.execute(
+                f"""
+                SELECT r.body review, r.rate, s.name student_name, c.name course_name, r.created_at, r.updated_at 
+                FROM reviews r
+                JOIN course_enrolments ce ON ce.id = r.enrolment_id
+                JOIN students s ON s.id = ce.student_id
+                JOIN courses c ON c.id = ce.course_id
+                WHERE s.id = %s
+                LIMIT (3)
+                """, (student_id,)
+            )
+            result = cursor.fetchall()
+            return result if result else None
+
+        return cls._execute_query(query, 'getStudentReviews')
+
 
 class Teachers(BaseRepository):
     table_name = "teachers"
@@ -302,7 +340,31 @@ class Courses(BaseRepository):
     def getCourseById(cls, course_id):
         def query(cursor):
             cursor.execute(
-                f"SELECT id, name, created_at, teacher_id, updated_at, description, difficulty, language FROM {cls.table_name} WHERE id = %s", (course_id, ))
+                f"""
+                SELECT
+                    id,
+                    name,
+                    created_at,
+                    teacher_id,
+                    updated_at,
+                    description,
+                    difficulty,
+                    language,
+                    r.avg_rate
+                FROM
+                    courses
+                LEFT JOIN (
+                    SELECT 
+                        ce.course_id,
+                        ROUND(AVG(r.rate), 2) avg_rate
+                    FROM course_enrolments ce
+                    JOIN reviews r ON r.enrolment_id = ce.id
+                    GROUP BY ce.course_id
+                ) r ON r.course_id = courses.id
+                WHERE
+                    id =  %s
+  
+                """, (course_id, ))
             result = cursor.fetchall()
             return result[0] if result else None
 
@@ -338,6 +400,23 @@ class Courses(BaseRepository):
                 f"DELETE FROM {cls.table_name} WHERE id = %s", (course_id,))
 
         return cls._execute_mutation(mutation, "deleteCourse")
+
+    @classmethod
+    def getCourseReviews(cls, course_id):
+        def query(cursor):
+            cursor.execute(f"""
+                            SELECT r.body review, r.rate, s.name student_name, c.name course_name, r.created_at, r.updated_at 
+                            FROM reviews r
+                            JOIN course_enrolments ce ON ce.id = r.enrolment_id
+                            JOIN courses c ON c.id = ce.course_id
+                            JOIN students s ON s.id = ce.student_id
+                            WHERE c.id = %s
+                            LIMIT (3)
+                            """, (course_id,))
+            result = cursor.fetchall()
+            return result if result else None
+
+        return cls._execute_query(query, 'getCourseReviews')
 
 
 class Tags(BaseRepository):
@@ -393,6 +472,36 @@ class Tags(BaseRepository):
 
         return cls._execute_mutation(mutation, "deleteTag")
 
+    @classmethod
+    def getTopCoursesByTag(cls, tag_id):
+        def query(cursor):
+            cursor.execute(
+                """
+                SELECT
+                    cs.id,
+                    cs.name course_name,
+                    avg(r.rate) avg_rate
+                FROM
+                    tags t
+                    JOIN course_tags ct ON t.id = ct.tag_id
+                    JOIN courses cs ON cs.id = ct.course_id
+                    JOIN course_enrolments ce ON cs.id = ce.course_id
+                    JOIN reviews r ON ce.id = r.enrolment_id
+                WHERE
+                    t.id = %s
+                GROUP BY
+                    cs.id,
+                    cs.name
+                ORDER BY
+                    avg_rate DESC
+                LIMIT
+                    (5)
+                """, (tag_id, ))
+            result = cursor.fetchall()
+            return result if result else None
+
+        return cls._execute_query(query, "getTopCoursesByTag")
+
 
 class Categories(BaseRepository):
     table_name = "categories"
@@ -408,7 +517,7 @@ class Categories(BaseRepository):
         return cls._execute_query(query, "getAllCategories")
 
     @classmethod
-    def getCategorieById(cls, category_id):
+    def getCategoryById(cls, category_id):
         def query(cursor):
             cursor.execute(f"""
                 SELECT c1.id, c1.name, c1.description,
@@ -452,3 +561,33 @@ class Categories(BaseRepository):
                 f"DELETE FROM {cls.table_name} WHERE id = %s", (category_id,))
 
         return cls._execute_mutation(mutation, "deleteCategory")
+
+    @classmethod
+    def getTopCoursesByCategory(cls, category_id):
+        def query(cursor):
+            cursor.execute(
+                """
+                SELECT
+                    cs.id,
+                    cs.name course_name,
+                    avg(r.rate) avg_rate
+                FROM
+                    categories c
+                    JOIN course_categories cc ON c.id = cc.category_id
+                    JOIN courses cs ON cc.course_id = cs.id
+                    JOIN course_enrolments ce ON cs.id = ce.course_id
+                    JOIN reviews r ON ce.id = r.enrolment_id
+                WHERE
+                    c.id = %s
+                GROUP BY
+                    cs.id,
+                    cs.name
+                ORDER BY
+                    avg_rate DESC
+                LIMIT
+                    (5)
+                """, (category_id, ))
+            result = cursor.fetchall()
+            return result if result else None
+
+        return cls._execute_query(query, "getTopCoursesByCategory")

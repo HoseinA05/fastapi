@@ -115,11 +115,11 @@ def format_teacher_info(teacher):
 def format_course_info(course):
     """
     Format course data into a nice message
-    course is a tuple: (id, name, created_at, teacher_id, updated_at, description, difficulty, language)
+    course is a tuple: (id, name, created_at, teacher_id, updated_at, description, difficulty, language, avgerage_rate)
     """
     # print(course)
 
-    id, name, created_at, teacher_id, updated_at, description, difficulty, language = course
+    id, name, created_at, teacher_id, updated_at, description, difficulty, language, avgerage_rate = course
 
     # Format dates nicely
     created_date = format_date(created_at)
@@ -129,6 +129,7 @@ def format_course_info(course):
   <b>📚 Course Profile</b>
 
   <b>Name:</b> {name}
+  <b>⭐️ Average Rating:</b> {avgerage_rate}
   <b>Description:</b>
   {description}
 
@@ -139,5 +140,32 @@ def format_course_info(course):
   <b>Created At:</b> {created_date}
   <b>Last Updated At:</b> {updated_at}
   <b>ID:</b> <code>{id}</code>
+  """
+    return details.strip()
+
+
+def format_course_review(review):
+    """
+    Formate course review into a nice message
+    :param review: tuple(body: str, rate: int, student_name: str, course_name: str, created_at: date, updated_at: date)
+    """
+
+    reviewBody, rate, student_name, course_name, created_at, updated_at = review
+
+    created_date = format_date(created_at)
+    updated_at = format_date(updated_at)
+
+    details = f"""
+  <b>✉️ Review</b>
+
+  <b>rate:</b> {'⭐️' * rate}
+  <b>Body:</b>\n{reviewBody}
+
+  <b>Course name:</b> {course_name}
+  <b>Student name:</b> {student_name}
+
+  <b>📅 Review Info</b>
+  <b>Created At:</b> {created_date}
+  <b>Last Updated At:</b> {updated_at}
   """
     return details.strip()

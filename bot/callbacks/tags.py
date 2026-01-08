@@ -3,8 +3,6 @@ from database.models import Tags, Admins
 from bot.handlers.start import startMarkup
 from bot.utils.crud_helpers import create_entity_markup
 
-# TODO: Add Option for showing courses with specific tags.
-
 
 def register(bot: TeleBot):
     cancelMarkup = types.InlineKeyboardMarkup()
@@ -35,6 +33,8 @@ def register(bot: TeleBot):
             """
             details.strip()
             markup = create_entity_markup("tag", tag_id, True)
+            markup.add(types.InlineKeyboardButton("📁 Show Top Courses",
+                       callback_data=f"tagCourses_{tag_id}"))
 
             bot.send_message(call.message.chat.id, details,
                              reply_markup=markup, parse_mode="HTML")
@@ -162,4 +162,23 @@ def register(bot: TeleBot):
         else:
             bot.send_message(call.message.chat.id, "❌ Failed to delete Tag.",
                              reply_markup=startMarkup())
+        bot.answer_callback_query(call.id)
+
+    # Show Top Courses with a Tag
+    @bot.callback_query_handler(func=lambda call: call.data.startswith('tagCourses_'))
+    def delete_tag(call):
+        tag_id = call.data.split('_')[1]
+        courses = Tags.getTopCoursesByTag(tag_id)
+
+        markup = types.InlineKeyboardMarkup()
+        if courses:
+            for course in courses:
+                markup.add(types.InlineKeyboardButton(
+                    course[1], callback_data=f"course_{course[0]}"))
+            bot.send_message(
+                call.message.chat.id, "📚 Top Courses with this Tag:", reply_markup=markup)
+        else:
+            bot.send_message(
+                call.message.chat.id, "There are no courses with this Tag.", reply_markup=markup)
+
         bot.answer_callback_query(call.id)

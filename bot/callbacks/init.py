@@ -1,6 +1,9 @@
 from . import students, teachers, courses, tags, categories
 from bot.handlers.start import startMarkup
 
+# TODO: Create a new entity for Reviews (Change The Corresponding codes from courses and students to use that)
+# TODO: Add Option for handling all updates at once.
+
 
 def register_all_callbacks(bot):
     """Register all callback handlers"""
